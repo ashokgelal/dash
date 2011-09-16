@@ -1,9 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 cd src;
-file='version.c';
-echo 'const char* version(){' > $file;
-echo -n '    const char* VERSION="' >> $file;
-echo "${1}\";" >> $file;
-echo '    return VERSION;' >> $file; 
-echo '}' >> $file;
+cfile='version.c';
+hfile='version.h';
+echo "#include \"${hfile}\"" > $cfile; 
+echo ''>> $cfile;
+echo 'const char* getVersion(){' >> $cfile;
+echo -n '    const char* VERSION="' >> $cfile;
+echo "${1}\";" >> $cfile;
+echo '    return VERSION;' >> $cfile; 
+echo '}' >> $cfile;
 

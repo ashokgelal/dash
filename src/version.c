@@ -1,4 +1,6 @@
-const char* version(){
-    const char* VERSION="0.0.1";
+#include "version.h"
+
+const char* getVersion(){
+    const char* VERSION="0.0.2";
     return VERSION;
 }
