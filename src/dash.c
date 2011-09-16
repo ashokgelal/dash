@@ -13,9 +13,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "version.h"
+#include "constants.h"
 
-#define PROGNAME "dash"
-
+char *prompt;
 void verifyShowVersionCommand(int *argc, char *argv[])
 {
 	int opt;
@@ -35,13 +35,15 @@ void verifyShowVersionCommand(int *argc, char *argv[])
 	}
 }
 
+void setupPrompt(){
+	prompt = getenv(ENV_PROMPT);
+	if(prompt==NULL || *prompt =='\0')
+		prompt = DEFAULT_PROMPT;
+}
+
 int main(int argc, char *argv[]) {
 	char *line;
-	char *prompt;
-	prompt = getenv("DASH_PROMPT");
-	if(prompt==NULL || *prompt =='\0')
-		prompt = ":) ";
-
+	setupPrompt();
 	verifyShowVersionCommand(&argc, argv);
 	using_history();
 	while((line=readline(prompt))) {
