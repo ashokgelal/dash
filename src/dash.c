@@ -9,13 +9,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sys/wait.h>
 #include "version.h"
 #include "constants.h"
 
 char *prompt;
+pid_t last_child_pid;
+int last_child_status;
+
 void verifyShowVersionCommand(int *argc, char *argv[])
 {
 	int opt;
@@ -41,15 +46,47 @@ void setupPrompt(){
 		prompt = DEFAULT_PROMPT;
 }
 
+void clearScreen(){
+	if((last_child_pid = fork()) < 0)
+		fprintf(stderr, "fork error");
+	else if(last_child_pid == 0){
+		execlp("clear", "clear", (char *)0);
+		fprintf(stderr, "couldn't clear the screen");
+		exit(127);
+	}
+	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
+		fprintf(stderr, "waitpid error");
+}
+
+int handleCommand(char *line)
+{
+	if(line=='\0')
+	{
+		return 0;
+	}
+
+	if(strcmp(line, "exit") == 0 || strcmp(line, "logout") == 0)
+	{
+		return EXIT_SHELL;
+	}
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	char *line;
-	setupPrompt();
 	verifyShowVersionCommand(&argc, argv);
+	clearScreen();
+	setupPrompt();
 	using_history();
 	while((line=readline(prompt))) {
-		printf("%s\n", line);
+		if(handleCommand(line)==EXIT_SHELL)
+		{
+			break;
+		}
+		//printf("%s\n", line);
 		add_history(line);
 		free(line);
 	}
+	clearScreen();
 	return EXIT_SUCCESS;
 }

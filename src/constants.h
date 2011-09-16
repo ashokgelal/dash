@@ -10,6 +10,7 @@
 #define PROGNAME "dash"
 #define DEFAULT_PROMPT ":> "
 #define ENV_PROMPT "DASH_PROMPT"
+#define EXIT_SHELL -1
 
 
 #endif /* CONSTANTS_H_ */
