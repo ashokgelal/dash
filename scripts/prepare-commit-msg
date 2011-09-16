@@ -1,0 +1,16 @@
+#!/bin/bash
+version_str=$(cat $1 | egrep -o '[\.[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*]')
+echo $version_str
+#if $version_str is unset then bail out
+if [[ -z "$version_str" ]]
+then
+	echo "Message doesn't contain version no in format [x.x.x]"
+	echo "No commit made. Try again!"
+	exit 1
+else
+	#strip [] from the version string
+	version_no=$(echo $version_str | egrep -o '[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*')
+#	version_no=$(echo $version_str | egrep -o '[[:alnum:]]*')
+	echo "Latest version: $version_no";
+	`./bump_version.sh $version_no`
+fi
