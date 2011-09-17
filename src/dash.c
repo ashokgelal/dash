@@ -60,10 +60,8 @@ void clearScreen(){
 
 int handleCommand(char *line)
 {
-	if(line=='\0')
-	{
+	if(line==NULL || line=='\0')
 		return 0;
-	}
 
 	if(strcmp(line, "exit") == 0 || strcmp(line, "logout") == 0)
 	{
@@ -71,14 +69,14 @@ int handleCommand(char *line)
 	}
 
 	if((last_child_pid = fork()) < 0)
-		fprintf(stderr, "fork error");
+		fprintf(stderr, "fork error\n");
 	else if(last_child_pid == 0){
 		execlp(line, line, (char *)0);
-		fprintf(stderr, "couldn't run %s", line);
+		fprintf(stderr, "couldn't run %s\n", line);
 		exit(127);
 	}
 	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
-		fprintf(stderr, "waitpid error");
+		fprintf(stderr, "waitpid error\n");
 
 	return 0;
 }
@@ -90,14 +88,15 @@ int main(int argc, char *argv[]) {
 	setupPrompt();
 	using_history();
 	while((line=readline(prompt))) {
-		if(handleCommand(line)==EXIT_SHELL)
-		{
+		if(handleCommand(line)==EXIT_SHELL) {
+			free(line);
 			break;
 		}
 		//printf("%s\n", line);
 		add_history(line);
 		free(line);
 	}
+	//TODO: free up line properly
 	clearScreen();
 	return EXIT_SUCCESS;
 }

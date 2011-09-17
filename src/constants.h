@@ -8,7 +8,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 #define PROGNAME "dash"
-#define DEFAULT_PROMPT ":> "
+#define DEFAULT_PROMPT ":~) "
 #define ENV_PROMPT "DASH_PROMPT"
 #define EXIT_SHELL -1
 
