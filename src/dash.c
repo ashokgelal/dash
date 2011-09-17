@@ -58,20 +58,35 @@ void clearScreen(){
 		fprintf(stderr, "waitpid error");
 }
 
+void parseParameters(char const *line, char *params[])
+{
+	char *delim = " ";
+	char *temp = strdup(line);
+	int i = 0;
+	params[i++] = strtok(temp, delim);
+
+	while(1) {
+		char * tok = strtok(NULL, delim);
+		params[i++] = tok;
+		if(tok == NULL)
+			break;
+	}
+}
+
 int handleCommand(char *line)
 {
 	if(line==NULL || line=='\0')
 		return 0;
 
 	if(strcmp(line, "exit") == 0 || strcmp(line, "logout") == 0)
-	{
 		return EXIT_SHELL;
-	}
 
 	if((last_child_pid = fork()) < 0)
 		fprintf(stderr, "fork error\n");
 	else if(last_child_pid == 0){
-		execlp(line, line, (char *)0);
+		char *param[2050];
+		parseParameters(line, param);
+		execvp(param[0], param);
 		fprintf(stderr, "couldn't run %s\n", line);
 		exit(127);
 	}
