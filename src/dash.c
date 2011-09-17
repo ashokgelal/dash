@@ -56,6 +56,7 @@ void clearScreen(){
 	}
 	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
 		fprintf(stderr, "waitpid error");
+
 }
 
 void parseParameters(char const *line, char *params[])
@@ -90,10 +91,27 @@ int handleCommand(char *line)
 		fprintf(stderr, "couldn't run %s\n", line);
 		exit(127);
 	}
-	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
-		fprintf(stderr, "waitpid error\n");
 
-	return 0;
+
+	while(1)
+	{
+		fprintf(stderr, "WAITING!!!\n");
+
+		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
+
+		if(last_child_pid == -1)
+			fprintf(stderr, "waitpid error\n");
+
+		if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
+		{
+			fprintf(stderr, "waitpid success\n");
+			return EXIT_SUCCESS;
+		}
+
+		fprintf(stderr, "do we even get here?\n");
+		sleep(1);
+	}
+	return EXIT_FAILURE;
 }
 
 int main(int argc, char *argv[]) {
