@@ -69,6 +69,17 @@ int handleCommand(char *line)
 	{
 		return EXIT_SHELL;
 	}
+
+	if((last_child_pid = fork()) < 0)
+		fprintf(stderr, "fork error");
+	else if(last_child_pid == 0){
+		execlp(line, line, (char *)0);
+		fprintf(stderr, "couldn't run %s", line);
+		exit(127);
+	}
+	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
+		fprintf(stderr, "waitpid error");
+
 	return 0;
 }
 
