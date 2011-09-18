@@ -113,6 +113,7 @@ void addJob(pid_t pid, char *command) {
 	JobPtr job = createJob(pid, command);
 	NodePtr node = createNode(job);
 	addAtRear(jobList, node);
+	fprintf(stdout, "%s\n", toString(job));
 }
 
 int handleWait(char *bgTask){
@@ -123,18 +124,15 @@ int handleWait(char *bgTask){
 	else{
 		addJob(last_child_pid, bgTask);
 		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
-		fprintf(stderr, "status of last job: %d\n", last_child_status);
+		fprintf(stdout, "status of last job: %d\n", last_child_status);
 	}
 
-	if(last_child_pid == -1)
-	{
+	if(last_child_pid == -1) {
 		fprintf(stderr, "waitpid error\n");
 		return EXIT_FAILURE;
 	}
 
-	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
-	{
-		fprintf(stderr, "waitpid success\n");
+	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status)) {
 		return EXIT_SUCCESS;
 	}
 
