@@ -21,6 +21,7 @@
 #include "version.h"
 #include "constants.h"
 #include "Job.h"
+#include "JobControl.h"
 
 char *prompt;
 pid_t last_child_pid;
@@ -113,61 +114,79 @@ void addJob(pid_t pid, char *command) {
 	JobPtr job = createJob(pid, command);
 	NodePtr node = createNode(job);
 	addAtRear(jobList, node);
-	fprintf(stdout, "%s\n", toString(job));
+	char *jobStr = toString(job);
+	fprintf(stdout, "%s\n", jobStr);
+	free(jobStr);
 }
 
 int handleWait(char *bgTask){
 	if(bgTask == NULL) {
 		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
+
+		if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status)) {
+			return EXIT_SUCCESS;
+		}
 	}
 	// background task
 	else{
 		addJob(last_child_pid, bgTask);
-		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
-		fprintf(stdout, "status of last job: %d\n", last_child_status);
+		return EXIT_SUCCESS;
+		//last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
+		//fprintf(stdout, "status of last job: %d\n", last_child_status);
 	}
 
 	if(last_child_pid == -1) {
 		fprintf(stderr, "waitpid error\n");
-		return EXIT_FAILURE;
-	}
-
-	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status)) {
-		return EXIT_SUCCESS;
 	}
 
 	return EXIT_FAILURE;
 }
 
-int handleCommand(const char *line)
-{
-	if(line==NULL || line=='\0' || strlen(line)==0)
-		return 0;
+int handleCommand(const char *line) {
+	// copy line so that we can modify it such as trimming the whitespaces etc
+	char *command = malloc(strlen(line));
+	strcpy(command, line);
 
-	if(strcmp(line, "exit") == 0 || strcmp(line, "logout") == 0)
+	if(command==NULL || command=='\0' || strlen(command)==0){
+		jobList = reportCompletedJobs(jobList);
+		free(command);
+		return RETURN_SUCCESS;
+	}
+
+	if(strcmp(trimwhitespace(command), "exit") == 0 || strcmp(trimwhitespace(command), "logout") == 0){
+		free(command);
 		return EXIT_SHELL;
+	}
 
-	char *bgTask = checkIfBackground(line);
+	if(strcmp(trimwhitespace(command), "jobs")==0) {
+		jobList = reportAllJobs(jobList);
+		free(command);
+		return RETURN_SUCCESS;
+	}
+
+	char *bgTask = checkIfBackground(command);
 
 	if((last_child_pid = fork()) < 0)
 		fprintf(stderr, "fork error\n");
 	else if(last_child_pid == 0){
 		char *param[2050];
 		if(bgTask !=NULL) {
-			param[0] = bgTask;
-			param[1] = '\0';
+			parseParameters(bgTask, param);
 		}
 		else{
-			parseParameters(line, param);
+			parseParameters(command, param);
 		}
 
-		if(param[0]==NULL || strlen(param[0])==0)
-			return EXIT_FAILURE;
+		if(param[0]==NULL || strlen(param[0])==0) {
+			free(command);
+			return RETURN_SUCCESS;
+		}
 
 		execvp(param[0], param);
-		fprintf(stderr, "couldn't run %s\n", line);
+		fprintf(stderr, "couldn't run %s\n", command);
 		exit(127);
 	}
+	free(command);
 	return handleWait(bgTask);
 }
 
@@ -192,5 +211,5 @@ int main(int argc, char *argv[]) {
 	}
 	clearScreen();
 	freeList(jobList);
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
 }

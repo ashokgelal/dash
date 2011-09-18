@@ -15,6 +15,8 @@ JobPtr createJob(int p_id, char *command)
 	newJob->job_id = job_id;
 	newJob->command = (char *)malloc(sizeof(char)*(strlen(command)+1));
 	strcpy(newJob->command, command);
+	newJob->status = Running;
+	newJob->statusReported = FALSE;
 	job_id++;
 	return newJob;
 }
@@ -40,3 +42,14 @@ void freeJob(void *obj){
 	free(myjob);
 }
 
+char *toStringWithStatus(void *obj){
+	JobPtr myjob = (JobPtr) obj;
+	char *status;
+	if(myjob->status == Running)
+		status = "Running";
+	else
+		status = "Done";
+	char *temp = (char *)malloc(sizeof(char)*strlen(myjob->command)+1+MAXJID_DIGITS+strlen(status)+5);
+	sprintf(temp, "[%d] %s %s", myjob->job_id, status, myjob->command);
+	return temp;
+}

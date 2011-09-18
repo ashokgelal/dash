@@ -10,8 +10,8 @@ PROGS=dash
 
 all: $(PROGS)
 
-dash: dash.o version.o Job.o
-	$(CC) $(CFLAGS) -o $@ dash.o version.o Job.o  $(LFLAGS)
+dash: dash.o version.o Job.o JobControl.o
+	$(CC) $(CFLAGS) -o $@ dash.o version.o Job.o JobControl.o $(LFLAGS)
 
 clean:
 	/bin/rm -f *.o $(PROGS) a.out	

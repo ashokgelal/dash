@@ -11,6 +11,7 @@
 #define DEFAULT_PROMPT ":~) "
 #define ENV_PROMPT "DASH_PROMPT"
 #define EXIT_SHELL -1
-
+#define RETURN_SUCCESS 0
+#define RETURN_FAIL 1
 
 #endif /* CONSTANTS_H_ */
