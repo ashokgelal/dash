@@ -1,17 +1,17 @@
 
+INSTALL=..
+INCLUDE=$(INSTALL)/include
+LIBS = $(INSTALL)/lib
+LFLAGS=-L$(LIBS) -lmylib -lreadline -lncurses
 CC=gcc
-CFLAGS=-g -Wall
-LIBS=-lreadline -lncurses
+CFLAGS=-g -Wall -I$(INCLUDE)
 
-PROGS=dash version
+PROGS=dash 
 
 all: $(PROGS)
 
-version: version.o
-	$(CC) $(CFLAGS) -o $@ $<
-
-dash: dash.o version.o
-	$(CC) $(CFLAGS) -o $@ $< version.o $(LIBS)
+dash: dash.o version.o Job.o
+	$(CC) $(CFLAGS) -o $@ dash.o version.o Job.o  $(LFLAGS)
 
 clean:
 	/bin/rm -f *.o $(PROGS) a.out	

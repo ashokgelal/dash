@@ -14,12 +14,18 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sys/wait.h>
+
+#include <List.h>
+#include <Node.h>
+
 #include "version.h"
 #include "constants.h"
+#include "Job.h"
 
 char *prompt;
 pid_t last_child_pid;
 int last_child_status;
+ListPtr jobList;
 
 void verifyShowVersionCommand(int *argc, char *argv[])
 {
@@ -56,7 +62,6 @@ void clearScreen(){
 	}
 	if((last_child_pid=waitpid(last_child_pid, &last_child_status, 0)) <0)
 		fprintf(stderr, "waitpid error");
-
 }
 
 char* checkIfBackground(const char *line)
@@ -83,6 +88,36 @@ void parseParameters(const char *line, char *params[])
 		if(tok == NULL)
 			break;
 	}
+}
+void addJob(pid_t pid, char *command) {
+	JobPtr job = createJob(pid, command);
+	NodePtr node = createNode(job);
+	addAtRear(jobList, node);
+}
+
+int handleWait(char *bgTask){
+	if(bgTask == NULL) {
+		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
+	}
+	// background task
+	else{
+		addJob(last_child_pid, bgTask);
+		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
+	}
+
+	if(last_child_pid == -1)
+	{
+		fprintf(stderr, "waitpid error\n");
+		return EXIT_FAILURE;
+	}
+
+	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
+	{
+		fprintf(stderr, "waitpid success\n");
+		return EXIT_SUCCESS;
+	}
+
+	return EXIT_FAILURE;
 }
 
 int handleCommand(const char *line)
@@ -114,29 +149,11 @@ int handleCommand(const char *line)
 		fprintf(stderr, "couldn't run %s\n", line);
 		exit(127);
 	}
+	return handleWait(bgTask);
+}
 
-	if(bgTask == NULL) {
-		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
-	}
-	// background task
-	else{
-		// TODO: add bg task to linked list
-		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
-	}
-
-	if(last_child_pid == -1)
-	{
-		fprintf(stderr, "waitpid error\n");
-		return EXIT_FAILURE;
-	}
-
-	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
-	{
-		fprintf(stderr, "waitpid success\n");
-		return EXIT_SUCCESS;
-	}
-
-	return EXIT_FAILURE;
+void setupJobList(){
+	jobList = createList(getKey, toString, freeJob);
 }
 
 int main(int argc, char *argv[]) {
@@ -144,6 +161,7 @@ int main(int argc, char *argv[]) {
 	verifyShowVersionCommand(&argc, argv);
 	clearScreen();
 	setupPrompt();
+	setupJobList();
 	using_history();
 	while((line=readline(prompt))) {
 		if(handleCommand(line)==EXIT_SHELL) {
@@ -154,5 +172,6 @@ int main(int argc, char *argv[]) {
 		free(line);
 	}
 	clearScreen();
+	freeList(jobList);
 	return EXIT_SUCCESS;
 }
