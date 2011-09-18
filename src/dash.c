@@ -59,7 +59,18 @@ void clearScreen(){
 
 }
 
-void parseParameters(char const *line, char *params[])
+char* checkIfBackground(const char *line)
+{
+	char *delim = "&";
+	char *temp = strdup(line);
+	char *tok = strtok(temp, delim);
+
+	if(tok==NULL || strcmp(tok, line)==0)
+		return NULL;
+	return tok;
+}
+
+void parseParameters(const char *line, char *params[])
 {
 	char *delim = " ";
 	char *temp = strdup(line);
@@ -74,43 +85,57 @@ void parseParameters(char const *line, char *params[])
 	}
 }
 
-int handleCommand(char *line)
+int handleCommand(const char *line)
 {
-	if(line==NULL || line=='\0')
+	if(line==NULL || line=='\0' || strlen(line)==0)
 		return 0;
 
 	if(strcmp(line, "exit") == 0 || strcmp(line, "logout") == 0)
 		return EXIT_SHELL;
 
+	char *bgTask = checkIfBackground(line);
+
 	if((last_child_pid = fork()) < 0)
 		fprintf(stderr, "fork error\n");
 	else if(last_child_pid == 0){
 		char *param[2050];
-		parseParameters(line, param);
+		if(bgTask !=NULL) {
+			param[0] = bgTask;
+			param[1] = '\0';
+		}
+		else{
+			parseParameters(line, param);
+		}
+
+		if(param[0]==NULL || strlen(param[0])==0)
+			return EXIT_FAILURE;
+
 		execvp(param[0], param);
 		fprintf(stderr, "couldn't run %s\n", line);
 		exit(127);
 	}
 
-
-	while(1)
-	{
-		fprintf(stderr, "WAITING!!!\n");
-
+	if(bgTask == NULL) {
 		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
-
-		if(last_child_pid == -1)
-			fprintf(stderr, "waitpid error\n");
-
-		if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
-		{
-			fprintf(stderr, "waitpid success\n");
-			return EXIT_SUCCESS;
-		}
-
-		fprintf(stderr, "do we even get here?\n");
-		sleep(1);
 	}
+	// background task
+	else{
+		// TODO: add bg task to linked list
+		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
+	}
+
+	if(last_child_pid == -1)
+	{
+		fprintf(stderr, "waitpid error\n");
+		return EXIT_FAILURE;
+	}
+
+	if(WIFEXITED(last_child_status) || WIFSIGNALED(last_child_status))
+	{
+		fprintf(stderr, "waitpid success\n");
+		return EXIT_SUCCESS;
+	}
+
 	return EXIT_FAILURE;
 }
 
@@ -125,11 +150,9 @@ int main(int argc, char *argv[]) {
 			free(line);
 			break;
 		}
-		//printf("%s\n", line);
 		add_history(line);
 		free(line);
 	}
-	//TODO: free up line properly
 	clearScreen();
 	return EXIT_SUCCESS;
 }
