@@ -64,6 +64,26 @@ void clearScreen(){
 		fprintf(stderr, "waitpid error");
 }
 
+char *trimwhitespace(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace(*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace(*end)) end--;
+
+  // Write new null terminator
+  *(end+1) = 0;
+
+  return str;
+}
+
 char* checkIfBackground(const char *line)
 {
 	char *delim = "&";
@@ -72,7 +92,7 @@ char* checkIfBackground(const char *line)
 
 	if(tok==NULL || strcmp(tok, line)==0)
 		return NULL;
-	return tok;
+	return trimwhitespace(tok);
 }
 
 void parseParameters(const char *line, char *params[])
@@ -103,6 +123,7 @@ int handleWait(char *bgTask){
 	else{
 		addJob(last_child_pid, bgTask);
 		last_child_pid = waitpid(last_child_pid, &last_child_status, WNOHANG);
+		fprintf(stderr, "status of last job: %d\n", last_child_status);
 	}
 
 	if(last_child_pid == -1)

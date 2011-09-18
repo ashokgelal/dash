@@ -1,5 +1,4 @@
 #!/bin/sh
 
-sleep 3s
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./lib
 ./src/dash $*
