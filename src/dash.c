@@ -14,6 +14,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sys/wait.h>
+#include <pwd.h>
 
 #include <List.h>
 #include <Node.h>
@@ -29,8 +30,9 @@ char *last_command;
 pid_t last_child_pid;
 int last_child_status;
 ListPtr jobList;
+char cur_path[4096];
 
-void verifyShowVersionCommand(int *argc, char *argv[])
+static void verifyShowVersionCommand(int *argc, char *argv[])
 {
 	int opt;
 	opt = getopt(*argc, argv, ":v");
@@ -49,15 +51,14 @@ void verifyShowVersionCommand(int *argc, char *argv[])
 	}
 }
 
-void setupPrompt(){
+static void setupPrompt(){
 	prompt = getenv(ENV_PROMPT);
 	if(prompt==NULL || *prompt =='\0')
 		prompt = DEFAULT_PROMPT;
 }
 
 
-char *trimwhitespace(char *str)
-{
+static char *trimwhitespace(char *str) {
   char *end;
 
   // Trim leading space
@@ -76,8 +77,7 @@ char *trimwhitespace(char *str)
   return str;
 }
 
-char* isBackgroundTask(const char *line)
-{
+static char* isBackgroundTask(const char *line) {
 	char *delim = "&";
 	char *temp = strdup(line);
 	char *tok = strtok(temp, delim);
@@ -87,21 +87,22 @@ char* isBackgroundTask(const char *line)
 	return trimwhitespace(tok);
 }
 
-void parseParameters(const char *line, char *params[])
-{
+static void parseParameters(const char *line, char *params[]) {
 	char *delim = " ";
 	char *temp = strdup(line);
 	int i = 0;
-	params[i++] = strtok(temp, delim);
+	params[i++] = trimwhitespace(strtok(temp, delim));
 
 	while(1) {
 		char * tok = strtok(NULL, delim);
 		params[i++] = tok;
-		if(tok == NULL)
+		// test for null and boundary
+		if(tok == NULL || i==MAX_PARAMS)
 			break;
 	}
 }
-void addJob(pid_t pid, char *command) {
+
+static void addJob(pid_t pid, char *command) {
 	JobPtr job = createJob(pid, command);
 	NodePtr node = createNode(job);
 	addAtRear(jobList, node);
@@ -128,7 +129,7 @@ static void quit(int status){
 }
 
 static void runInBackground(char *bgCommand){
-	char *param[2050];
+	char *param[MAX_PARAMS];
 	parseParameters(bgCommand, param);
 	execvp(param[0], param);
 	fprintf(stderr, "couldn't run background job: %s\n", bgCommand);
@@ -137,9 +138,11 @@ static void runInBackground(char *bgCommand){
 	quit(127);
 }
 
-static void runInForeground(char *command){
-	char *param[2050];
-	parseParameters(command, param);
+static Boolean isChdirCommand(char *command){
+	return (strcmp(command, "cd")==0);
+}
+
+static void runInForeground(char *command, char* param[]){
 	// at this point we are sure that it is a foreground command
 	execvp(param[0], param);
 	fprintf(stderr, "couldn't run foreground job: %s\n", command);
@@ -148,14 +151,28 @@ static void runInForeground(char *command){
 	quit(127);
 }
 
-static void handleNormalCommand(char *command, char *bgCommand){
+static void handleNormalCommand(char *command, char *param[], char *bgCommand){
 	if(bgCommand != NULL)
 		runInBackground(bgCommand);
 	else {
 		// if it is background we will never be here
 		free(bgCommand);
-		runInForeground(command);
+		runInForeground(command, param);
 	}
+}
+
+static char *getHomePath(){
+	uid_t id = getuid();
+
+	struct passwd *pwd;
+	pwd = getpwuid(id);
+
+	return (pwd == NULL) ? "." : pwd->pw_dir;
+}
+
+static void setupConsole(){
+	getcwd(cur_path, 4096);
+	printf("%c]0;%s%s%c",'\033', "Olet tässä: ",cur_path, '\007');
 }
 
 static int handleCommand(const char *line) {
@@ -166,21 +183,40 @@ static int handleCommand(const char *line) {
 	int returnStatus = RETURN_FAIL;
 	// if no bg task, bgCommand is set to null
 	char *bgCommand = isBackgroundTask(command);
-
+	char *param[MAX_PARAMS];
 	if(isEmptyCommand(command)){
 		jobList = reportCompletedJobs(jobList);
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
 	}
 
-	if(isExitCommand(command)){
+	// don't parse parameters before testing for empty command
+	parseParameters(command, param);
+
+	if(isExitCommand(param[0])){
 		returnStatus = EXIT_SHELL;
 		goto finally;
 	}
 
-	if(isJobsCommand(command)){
+	if(isJobsCommand(param[0])){
 		jobList = reportAllJobs(jobList);
 		returnStatus = RETURN_SUCCESS;
+		goto finally;
+	}
+
+	if(isChdirCommand(param[0])){
+		char *path = param[1];
+		//fprintf(stderr, "path is: %s", path);
+		if(path=='\0') {
+			path = getHomePath();
+			//fprintf(stderr, "path is: %s", path);
+		}
+		int status = chdir(path);
+		if(status==0){
+			setupConsole();
+			returnStatus = RETURN_SUCCESS;
+		}
+		returnStatus = (status==0) ? RETURN_SUCCESS : RETURN_FAIL;
 		goto finally;
 	}
 
@@ -191,7 +227,7 @@ static int handleCommand(const char *line) {
 	}
 
 	else if(last_child_pid == 0) {
-		handleNormalCommand(command, bgCommand);
+		handleNormalCommand(command, param, bgCommand);
 		// we should never be at this point
 		returnStatus = RETURN_FAIL;
 		goto finally;
@@ -209,7 +245,6 @@ static int handleCommand(const char *line) {
 			goto finally;
 		}
 	}else {
-		//fprintf(stderr, "adding job%s\n", command);
 		addJob(last_child_pid, bgCommand);
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
@@ -222,11 +257,11 @@ static int handleCommand(const char *line) {
 }
 
 
-void setupJobList(){
+static void setupJobList(){
 	jobList = createList(getKey, toString, freeJob);
 }
 
-void clearScreen(){
+static void clearScreen(){
 	handleCommand("clear");
 }
 
@@ -235,6 +270,7 @@ int main(int argc, char *argv[]) {
 	verifyShowVersionCommand(&argc, argv);
 	clearScreen();
 	setupPrompt();
+	setupConsole();
 	setupJobList();
 	using_history();
 	while((line=readline(prompt))) {
