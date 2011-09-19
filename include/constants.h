@@ -13,5 +13,6 @@
 #define EXIT_SHELL -1
 #define RETURN_SUCCESS 0
 #define RETURN_FAIL 1
+#define MAX_PARAMS 2050
 
 #endif /* CONSTANTS_H_ */
