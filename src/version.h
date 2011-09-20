@@ -2,7 +2,7 @@
  * version.h
  *
  *  Created on: Sep 15, 2011
- *      Author: ashokgelal
+ *      Author: Ashok Gelal
  */
 
 #ifndef VERSION_H_
