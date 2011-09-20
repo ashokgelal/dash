@@ -1,5 +1,5 @@
 /*
- * Job.c
+ * Job.c : Represents a background task
  *
  *  Created on: Sep 17, 2011
  *      Author: ashokgelal
@@ -7,8 +7,10 @@
 
 #include "Job.h"
 
-JobPtr createJob(pid_t p_id, uint job_id, char *command)
-{
+/**
+ * Creates a job with given pid, jobid, and command
+ */
+JobPtr createJob(pid_t p_id, uint job_id, char *command) {
 	JobPtr newJob = (JobPtr) malloc(sizeof(Job));
 	newJob->p_id = p_id;
 	newJob->job_id = job_id;
@@ -19,14 +21,18 @@ JobPtr createJob(pid_t p_id, uint job_id, char *command)
 	return newJob;
 }
 
-int getKey(void *obj)
-{
+/**
+ * Returns the key of this task
+ */
+int getKey(void *obj) {
 	JobPtr myjob = (JobPtr) obj;
 	return myjob->job_id;
 }
 
-char *toString(void *obj)
-{
+/**
+ * Returs a properly formatted job task
+ */
+char *toString(void *obj) {
 	JobPtr myjob = (JobPtr)obj;
 	char *temp = (char *)malloc(sizeof(char)*strlen(myjob->command)+1+MAXPID_DIGITS+MAXJID_DIGITS+5);
 	sprintf(temp, "[%d] %d %s", myjob->job_id, myjob->p_id, myjob->command);
@@ -40,6 +46,9 @@ void freeJob(void *obj){
 	free(myjob);
 }
 
+/**
+ * Returns a formatted job object with status
+ */
 char *toStringWithStatus(void *obj){
 	JobPtr myjob = (JobPtr) obj;
 	char *status;
