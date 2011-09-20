@@ -23,6 +23,7 @@
 #include "constants.h"
 #include "Job.h"
 #include "JobControl.h"
+#include "utilities.h"
 
 char *prompt;
 CommandType last_command_type;
@@ -57,26 +58,6 @@ static void setupPrompt(){
 		prompt = DEFAULT_PROMPT;
 }
 
-
-static char *trimwhitespace(char *str) {
-  char *end;
-
-  // Trim leading space
-  while(isspace(*str)) str++;
-
-  if(*str == 0)  // All spaces?
-    return str;
-
-  // Trim trailing space
-  end = str + strlen(str) - 1;
-  while(end > str && isspace(*end)) end--;
-
-  // Write new null terminator
-  *(end+1) = 0;
-
-  return str;
-}
-
 static char* isBackgroundTask(const char *line) {
 	char *delim = "&";
 	char *temp = strdup(line);
@@ -85,37 +66,6 @@ static char* isBackgroundTask(const char *line) {
 	if(tok==NULL || strcmp(tok, line)==0)
 		return NULL;
 	return trimwhitespace(tok);
-}
-
-static void parseParameters(const char *line, char *params[]) {
-	char *delim = " ";
-	char *temp = strdup(line);
-	int i = 0;
-	params[i++] = trimwhitespace(strtok(temp, delim));
-
-	while(1) {
-		char * tok = strtok(NULL, delim);
-		params[i++] = tok;
-		// test for null and boundary
-		if(tok == NULL || i==MAX_PARAMS)
-			break;
-	}
-}
-
-static void addJob(pid_t pid, char *command) {
-	int nextid = 0;
-	// try to get the next highest no.
-	if(getSize(jobList)>0) {
-		JobPtr lastJob = (JobPtr)jobList->tail->obj;
-		nextid = lastJob->job_id;
-	}
-
-	JobPtr job = createJob(pid, ++nextid, command);
-	NodePtr node = createNode(job);
-	addAtRear(jobList, node);
-	char *jobStr = toString(job);
-	fprintf(stdout, "%s\n", jobStr);
-	free(jobStr);
 }
 
 static Boolean isExitCommand(const char * command) {
@@ -252,7 +202,7 @@ static int handleCommand(const char *line) {
 			goto finally;
 		}
 	}else {
-		addJob(last_child_pid, bgCommand);
+		addJob(jobList, last_child_pid, bgCommand);
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
 	}

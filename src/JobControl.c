@@ -48,3 +48,19 @@ ListPtr reportCompletedJobs(ListPtr list) {
 	free(list);
 	return newList;
 }
+
+void addJob(ListPtr list, pid_t pid, char *command) {
+	int nextid = 0;
+	// try to get the next highest no.
+	if(getSize(list)>0) {
+		JobPtr lastJob = (JobPtr)list->tail->obj;
+		nextid = lastJob->job_id;
+	}
+
+	JobPtr job = createJob(pid, ++nextid, command);
+	NodePtr node = createNode(job);
+	addAtRear(list, node);
+	char *jobStr = toString(job);
+	fprintf(stdout, "%s\n", jobStr);
+	free(jobStr);
+}
