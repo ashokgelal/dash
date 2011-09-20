@@ -14,5 +14,6 @@
 
 ListPtr reportAllJobs(ListPtr);
 ListPtr reportCompletedJobs(ListPtr);
+void addJob(ListPtr, pid_t, char *);
 
 #endif /* JOBCONTROL_H_ */
