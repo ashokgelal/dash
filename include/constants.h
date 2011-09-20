@@ -2,7 +2,7 @@
  * constants.h
  *
  *  Created on: Sep 15, 2011
- *      Author: ashokgelal
+ *      Author: Ashok Gelal
  */
 
 #ifndef CONSTANTS_H_
