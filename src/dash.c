@@ -103,7 +103,14 @@ static void parseParameters(const char *line, char *params[]) {
 }
 
 static void addJob(pid_t pid, char *command) {
-	JobPtr job = createJob(pid, command);
+	int nextid = 0;
+	// try to get the next highest no.
+	if(getSize(jobList)>0) {
+		JobPtr lastJob = (JobPtr)jobList->tail->obj;
+		nextid = lastJob->job_id;
+	}
+
+	JobPtr job = createJob(pid, ++nextid, command);
 	NodePtr node = createNode(job);
 	addAtRear(jobList, node);
 	char *jobStr = toString(job);
