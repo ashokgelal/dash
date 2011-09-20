@@ -19,14 +19,14 @@ typedef struct job *JobPtr;
 typedef enum { Running, Done } JobStatus;
 
 struct job{
-	int p_id;
-	int job_id;
+	pid_t p_id;
+	uint job_id;
 	char *command;
 	JobStatus status;
 	Boolean statusReported;
 };
 
-JobPtr createJob(int, char *);
+JobPtr createJob(pid_t, uint, char *);
 
 char *toString(void *);
 void freeJob(void *);
