@@ -1,5 +1,5 @@
 #!/bin/sh
-cd src;
+cd ../src;
 cfile='version.c';
 hfile='version.h';
 echo "#include \"${hfile}\"" > $cfile; 
