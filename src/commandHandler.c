@@ -91,7 +91,6 @@ int handleCommand(const char *line) {
 	char *bgCommand = isBackgroundTask(command);
 	char *param[MAX_PARAMS];
 	if(isEmptyCommand(command)){
-		jobList = reportCompletedJobs(jobList);
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
 	}
@@ -155,6 +154,8 @@ int handleCommand(const char *line) {
 	}
 
 	finally:
+		if(getSize(jobList)>0)
+			jobList = reportCompletedJobs(jobList);
 		free(command);
 		free(bgCommand);
 		return returnStatus;

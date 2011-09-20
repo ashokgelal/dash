@@ -10,7 +10,7 @@
 #define PROGNAME "dash"
 #define DEFAULT_PROMPT ":~) "
 #define ENV_PROMPT "DASH_PROMPT"
-#define EXIT_SHELL -1
+#define EXIT_SHELL -1111
 #define RETURN_SUCCESS 0
 #define RETURN_FAIL 1
 #define MAX_PARAMS 2050
