@@ -1,6 +1,4 @@
 #!/bin/sh
-cd ..;
-echo pwd;
 cd src;
 cfile='version.c';
 hfile='version.h';
