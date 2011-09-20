@@ -7,9 +7,8 @@
 
 #include "Job.h"
 
-JobPtr createJob(int p_id, char *command)
+JobPtr createJob(pid_t p_id, uint job_id, char *command)
 {
-	static uint job_id = 1;
 	JobPtr newJob = (JobPtr) malloc(sizeof(Job));
 	newJob->p_id = p_id;
 	newJob->job_id = job_id;
@@ -17,7 +16,6 @@ JobPtr createJob(int p_id, char *command)
 	strcpy(newJob->command, command);
 	newJob->status = Running;
 	newJob->statusReported = FALSE;
-	job_id++;
 	return newJob;
 }
 
