@@ -288,6 +288,11 @@ int main(int argc, char *argv[]) {
 		add_history(line);
 		free(line);
 	}
+
+	// catch for Ctrl-D
+	if(line == '\0')
+		free(line);
+
 	clearScreen();
 	quit(EXIT_SUCCESS);
 	return EXIT_SUCCESS;
