@@ -87,9 +87,10 @@ static void handleNormalCommand(char *command, char *param[], char *bgCommand){
  * Main function for handling the provided line.
  * It parses the line first, identifies the type of commands, and executes accordingly
  */
+char *command;
 int handleCommand(const char *line) {
 	// copy line so that we can modify it such as trimming the whitespaces etc
-	char *command = malloc(strlen(line));
+	command = malloc(strlen(line));
 	strcpy(command, line);
 	command = trimwhitespace(command);
 	int returnStatus = RETURN_FAIL;
@@ -154,7 +155,7 @@ int handleCommand(const char *line) {
 
 		if(waitStatus == -1) {
 			// TODO: Check return state
-			fprintf(stderr, "** WAITPID ERROR:  %d,  processStatus:%d, waitStatus:%d\n", last_child_pid, last_child_status, waitStatus);
+//			fprintf(stderr, "** WAITPID ERROR:  %d,  processStatus:%d, waitStatus:%d\n", last_child_pid, last_child_status, waitStatus);
 			returnStatus = RETURN_FAIL;
 			goto finally;
 		}
@@ -163,7 +164,7 @@ int handleCommand(const char *line) {
 			goto finally;
 		}
 	}else {
-		addJob(jobList, last_child_pid, bgCommand);
+		addJob(jobList, last_child_pid, bgCommand, Running);
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
 	}
@@ -184,10 +185,10 @@ int run(char *prompt){
 	setbuf(stdout, NULL);						// NEW sets stdout to unbuffered
 	int shell_pgid = tcgetpgrp(STDIN_FILENO);	// NEW captures terminal's current pgid
 	tcsetpgrp(STDIN_FILENO, getpgrp());			// NEW sets teminal's pgid to process's currents pgid
-	fprintf(stdout, "pid: %o grp: %o tcgrp: %o\n\n", getpid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
+//	fprintf(stdout, "pid: %o grp: %o tcgrp: %o\n\n", getpid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
 
 	(void) signal(SIGINT, handle_sigterm);
-	(void) signal(SIGTSTP, SIG_IGN);
+	(void) signal(SIGTSTP, handle_sigterm);
 	(void) signal(SIGQUIT, SIG_IGN);
 	(void) signal(SIGTTIN, SIG_IGN);
 	(void) signal(SIGTTOU, SIG_IGN);
@@ -218,7 +219,9 @@ int run(char *prompt){
 void handle_sigterm(int sig){
 	switch(sig){
 	case SIGTSTP:
-		fprintf(stdout, "Caught Ctrl+Z!\n");
+		fprintf(stdout, "Caught Ctrl+Z! %s\n", command);
+		kill(last_child_pid, SIGSTOP);
+		addJob(jobList, last_child_pid, command, Stopped);
 		return;
 	case SIGINT:
 		kill(last_child_pid, SIGKILL);
