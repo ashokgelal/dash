@@ -68,7 +68,7 @@ ListPtr reportCompletedJobs(ListPtr list) {
  * Creates a job with given pid, and command, and adds the job
  * to the given list.
  */
-void addJob(ListPtr list, pid_t pid, char *command) {
+void addJob(ListPtr list, pid_t pid, char *command, JobStatus status) {
 	int nextid = 0;
 	// try to get the next highest no.
 	if(getSize(list)>0) {
@@ -77,8 +77,11 @@ void addJob(ListPtr list, pid_t pid, char *command) {
 	}
 
 	char *cmd = (char *)malloc(sizeof(char)*(strlen(command)+3));
-	sprintf(cmd, "%s &", command);
-	JobPtr job = createJob(pid, ++nextid, cmd);
+	if(status == Running)
+		sprintf(cmd, "%s &", command);
+	else
+		sprintf(cmd, "%s", command);
+	JobPtr job = createJob(pid, ++nextid, cmd, status);
 	NodePtr node = createNode(job);
 	addAtRear(list, node);
 	char *jobStr = toString(job);
