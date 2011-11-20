@@ -4,13 +4,14 @@
  *  Created on: Sep 19, 2011
  *      Author: Ashok Gelal
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <common.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sys/wait.h>
-#include <stdio.h>
+#include <signal.h>
 
 #include <List.h>
 #include <Node.h>
@@ -20,10 +21,12 @@
 #include "Job.h"
 #include "constants.h"
 #include "utilities.h"
+void handle_sigterm(int sig);
 
 CommandType last_command_type;
 char *last_command;
 pid_t last_child_pid;
+pid_t last_pid;
 int last_child_status;
 ListPtr jobList;
 
@@ -54,6 +57,9 @@ static void runInBackground(char *bgCommand){
 static void runInForeground(char *command, char* param[]){
 	// at this point we are sure that it is a foreground command
 	execvp(param[0], param);
+	goto finally;
+	
+	finally:
 	fprintf(stderr, "couldn't run foreground job: %s\n", command);
 	// we are quitting; so free memory
 	free(command);
@@ -130,16 +136,25 @@ int handleCommand(const char *line) {
 	}
 
 	else if(last_child_pid == 0) {
+		last_child_pid = getpid();
 		handleNormalCommand(command, param, bgCommand);
 		// we should never be at this point
 		returnStatus = RETURN_FAIL;
 		goto finally;
+	}else{
+		if(setpgid(last_child_pid,last_child_pid) == -1){
+			fprintf(stderr, "couldn't run foreground job: %s\n", command);
+			goto finally;
+		}
 	}
 
 	if(bgCommand == NULL) {
-		last_child_pid=waitpid(last_child_pid, &last_child_status, 0);
-		if(last_child_pid == -1) {
-			fprintf(stderr, "waitpid error\n");
+		int waitStatus;
+		waitStatus=waitpid(last_child_pid, &last_child_status, WUNTRACED | WCONTINUED);
+
+		if(waitStatus == -1) {
+			// TODO: Check return state
+			fprintf(stderr, "** WAITPID ERROR:  %d,  processStatus:%d, waitStatus:%d\n", last_child_pid, last_child_status, waitStatus);
 			returnStatus = RETURN_FAIL;
 			goto finally;
 		}
@@ -165,6 +180,19 @@ int handleCommand(const char *line) {
  * Runs the dash program with the provided prompt.
  */
 int run(char *prompt){
+	
+	setbuf(stdout, NULL);						// NEW sets stdout to unbuffered
+	int shell_pgid = tcgetpgrp(STDIN_FILENO);	// NEW captures terminal's current pgid
+	tcsetpgrp(STDIN_FILENO, getpgrp());			// NEW sets teminal's pgid to process's currents pgid
+	fprintf(stdout, "pid: %o grp: %o tcgrp: %o\n\n", getpid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
+
+	(void) signal(SIGINT, handle_sigterm);
+	(void) signal(SIGTSTP, SIG_IGN);
+	(void) signal(SIGQUIT, SIG_IGN);
+	(void) signal(SIGTTIN, SIG_IGN);
+	(void) signal(SIGTTOU, SIG_IGN);
+	(void) signal(SIGCHLD, SIG_IGN);
+
 	char *line;
 	jobList = createList(getKey, toString, freeJob);
 	using_history();
@@ -181,7 +209,22 @@ int run(char *prompt){
 	if(line == '\0')
 		free(line);
 
-	handleCommand("clear");
+	tcsetpgrp(STDIN_FILENO, shell_pgid);		// NEW reset terminal back to original pgid
+	//handleCommand("clear");
 	quit(EXIT_SUCCESS);
 	return EXIT_SUCCESS;
 }
+
+void handle_sigterm(int sig){
+	switch(sig){
+	case SIGTSTP:
+		fprintf(stdout, "Caught Ctrl+Z!\n");
+		return;
+	case SIGINT:
+		kill(last_child_pid, SIGKILL);
+		printf("Caught Ctrl+C!\n");
+		return;
+	}
+	fprintf(stdout, "Caught this signal %o!\n", sig);
+}
+
