@@ -10,13 +10,13 @@
 /**
  * Creates a job with given pid, jobid, and command
  */
-JobPtr createJob(pid_t p_id, uint job_id, char *command) {
+JobPtr createJob(pid_t p_id, uint job_id, char *command, JobStatus status) {
 	JobPtr newJob = (JobPtr) malloc(sizeof(Job));
 	newJob->p_id = p_id;
 	newJob->job_id = job_id;
 	newJob->command = (char *)malloc(sizeof(char)*(strlen(command)+1));
 	strcpy(newJob->command, command);
-	newJob->status = Running;
+	newJob->status = status;
 	newJob->statusReported = FALSE;
 	return newJob;
 }
@@ -54,8 +54,8 @@ char *toStringWithStatus(void *obj){
 	char *status;
 	if(myjob->status == Running)
 		status = "Running";
-	else
-		status = "Done";
+	else if(myjob->status == Stopped)
+		status = "Stopped";
 	char *temp = (char *)malloc(sizeof(char)*strlen(myjob->command)+1+MAXJID_DIGITS+strlen(status)+5);
 	sprintf(temp, "[%d] %s %s", myjob->job_id, status, myjob->command);
 	return temp;
