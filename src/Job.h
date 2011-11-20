@@ -16,7 +16,7 @@
 
 typedef struct job Job;
 typedef struct job *JobPtr;
-typedef enum { Running, Done } JobStatus;
+typedef enum { Running, Done, Stopped } JobStatus;
 
 struct job{
 	pid_t p_id;
@@ -26,7 +26,7 @@ struct job{
 	Boolean statusReported;
 };
 
-JobPtr createJob(pid_t, uint, char *);
+JobPtr createJob(pid_t, uint, char *, JobStatus);
 
 char *toString(void *);
 void freeJob(void *);
