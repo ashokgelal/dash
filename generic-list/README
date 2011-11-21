@@ -1,0 +1,77 @@
+Ashok Gelal
+COMPSCI 453
+Programming Assignment 0 - Generic Doubly Linked List
+
+Description:
+The objective of this assignment is to complete the implementation of
+a generic doubly linked list. The completed linked list is a list which
+uses void pointers making it a generic. This list provides most of the
+features of a list - adding to front, adding to back, removing from
+front, removing from back, removing a node, searching a node and
+printing a list. One of the few things that this list doesn't provide
+is adding a node at a particular index.
+
+To make the list easy to traverse, I've also implemented an iterator
+that takes a list and provides typical (and minimal) iterator functions 
+- next() and hasNext(). The iterator also checks for the structural 
+integrity of a list which means a user is restricted to change the
+list in such a way that it changes the size of the list such as by
+adding a new node or by removing a node. When such structural change
+is detected, next call to 'next()' and 'hasNext()' throws an error
+and closes the application.
+
+To make this list reusable in our upcoming programming assignments
+(or people can accuse me of being greedy for that extra 10 points),
+I've put the source files in appropriate folders such that running
+'make' on the root folder creates a shared library.
+
+The program also comes with a full suite of tests that tests different
+functions of a list such as adding, removing, iterating etc. This is
+not the test that came bundled with the provided files - I've written
+all the tests from scratch. The test covers cases such as adding to 
+an empty or uninitialized list, adding null nodes, searching by key,
+removing, random adding (adding at rear and then to the front, for an
+example) etc.
+
+Please note that because I'm also testing adding nodes to uninitialized
+list so 'unused variables' and 'uninitialized variables' compiler 
+warnings are expected.
+
+This test is called MyTest and can be run by:
+run 'make' on the root folder
+run 'cd src'
+invoke './runMyTest.sh'
+
+The output message should be something like:
+Tests completed. 0 tests failed out of 28.
+
+
+Experience:
+Since we have been doing linked list for quite a time now (most of the
+times using LinkedList from Java's standard library), the concepts
+were easy to comprehend and hence it was easy to implement (at least
+on paper). Some small bugs here and there otherwise it was a piece of
+cake. First I wasn't thinking about implementing an iterator but as
+I started coding it, I felt the necessity of it and implemented it too.
+A small bug in search did took a significant amount of my time to debug
+and get rid of a segmentation fault. Instead of passing an object to
+get key, I was passing a node pointer and hence NULL was being returned.
+As I was trying to read the data of the returned object, I got a segfault.
+
+Also, most of my bugs surfaced once I started testing the list against
+my tests so writing tests turned out to be fruitful.
+
+The other complex part of this programming assignment was to understand
+the structure of the folders and edit the Makefile. Took me sometimes to
+get my ListIterator source code loading and compiling everything.
+
+Because of the complexity of the folders, and to make sure that everything
+compiles, I've submitted my whole root folder minus object files and nasty
+.svn folders. Following are some of the important files submitted along with
+this programming assignment (first 3 are new files added to this project):
+
+ListIterator.h => header file for list iterator
+ListIterator.c => implementation of list iterator
+MyTest.c => my custom tests for testing linked list
+List.c => Implementation of a doubly linked list
+README => this file

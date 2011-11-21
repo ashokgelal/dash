@@ -6,6 +6,7 @@
  *      Author: Ashok Gelal
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
@@ -118,4 +119,13 @@ Boolean isJobsCommand(const char *command) {
  */
 Boolean isChdirCommand(char *command){
 	return (strcmp(command, "cd")==0);
+}
+
+
+Boolean isBgCommand(char *command){
+	return (strcmp(command, "bg")==0);
+}
+
+Boolean isFgCommand(char *command){
+	return (strcmp(command, "fg")==0);
 }
