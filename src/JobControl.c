@@ -76,16 +76,47 @@ void addJob(ListPtr list, pid_t pid, char *command, JobStatus status) {
 		nextid = lastJob->job_id;
 	}
 
-	char *cmd = (char *)malloc(sizeof(char)*(strlen(command)+3));
-	if(status == Running)
-		sprintf(cmd, "%s &", command);
-	else
-		sprintf(cmd, "%s", command);
-	JobPtr job = createJob(pid, ++nextid, cmd, status);
+	JobPtr job = createJob(pid, ++nextid, command, status);
 	NodePtr node = createNode(job);
 	addAtRear(list, node);
 	char *jobStr = toString(job);
-	fprintf(stdout, "%s\n", jobStr);
+	fprintf(stdout, "\n%s\n", jobStr);
 	free(jobStr);
-	free(cmd);
+}
+
+
+JobPtr findFirstStoppedJob(ListPtr list) {
+	initReverse(list);
+	NodePtr node;
+	while(hasNextReverse(list)){
+		node = nextReverse(list);
+		JobPtr job = (JobPtr) node->obj;
+		if (job->status == Stopped){
+			return job;
+		}
+	}
+	return NULL;
+}
+
+NodePtr findJobWithId(ListPtr list, int id){
+	// TODO move this
+	initReverse(list);
+	NodePtr node;
+	while(hasNextReverse(list)){
+		node = nextReverse(list);
+		JobPtr job = (JobPtr) node->obj;
+
+		if (job->job_id == id){
+			return node;
+		}
+		if (id==0 && job->status == Stopped){
+			return node;
+		}
+	}
+
+	// we don't have any stopped jobs
+	// if id == 0, try to find the first job job that is not STOPPED
+	if (id == 0)
+		return list->tail;
+	return NULL;
 }

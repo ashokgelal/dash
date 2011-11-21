@@ -57,7 +57,7 @@ char * initDash(int argc, char *argv[]) {
 		exit(EXIT_SUCCESS);
 	}
 
-	handleCommand("clear");
+	//handleCommand("clear");
 	setupConsoleTitle();
 	return getPrompt();
 }
