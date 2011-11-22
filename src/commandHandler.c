@@ -209,8 +209,7 @@ int handleCommand(const char *line) {
 	}
 
 	if(bgCommand == NULL) {
-		int waitStatus;
-		waitStatus=waitpid(last_child_pid, &last_child_status, WCONTINUED | WUNTRACED);
+		waitpid(last_child_pid, &last_child_status, WCONTINUED | WUNTRACED);
 		goto finally;
 		if(WIFCONTINUED(last_child_status) || WIFSTOPPED(last_child_status)) {
 			returnStatus = RETURN_SUCCESS;
@@ -257,13 +256,14 @@ int run(char *prompt){
 	// catch for Ctrl-D
 	if(line == '\0')
 		free(line);
+
+	// free pending jobs as we are exiting
+	init(jobList);
 	while(hasNext(jobList)) {
-			NodePtr node = next(jobList);
-			JobPtr job = (JobPtr) node->obj;
-			removeNode(jobList, node);
-			freeNode(node, freeJob);
-		}
-		free(jobList);
+		NodePtr node = next(jobList);
+		freeNode(node, freeJob);
+	}
+	free(jobList);
 	return EXIT_SUCCESS;
 }
 
