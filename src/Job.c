@@ -56,6 +56,8 @@ char *toStringWithStatus(void *obj){
 		status = "Running";
 	else if(myjob->status == Stopped)
 		status = "Stopped";
+	else
+		status = "Done";
 	char *temp = (char *)malloc(sizeof(char)*strlen(myjob->command)+1+MAXJID_DIGITS+strlen(status)+5);
 	sprintf(temp, "[%d] %s %s", myjob->job_id, status, myjob->command);
 	return temp;

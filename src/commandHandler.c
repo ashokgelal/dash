@@ -4,30 +4,15 @@
  *  Created on: Sep 19, 2011
  *      Author: Ashok Gelal
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <common.h>
-#include <readline/readline.h>
-#include <readline/history.h>
-#include <sys/wait.h>
-#include <signal.h>
-
-#include <List.h>
-#include <Node.h>
 
 #include "commandHandler.h"
-#include "JobControl.h"
-#include "Job.h"
-#include "constants.h"
-#include "utilities.h"
+
 void handle_sigterm(int sig);
 
 pid_t last_child_pid;
-pid_t last_pid;
 int last_child_status;
 ListPtr jobList;
-char *command;
+char *last_command;
 
 /**
  * Frees up resources and quits the program with the provided status.
@@ -43,10 +28,10 @@ static void quit(int status){
 static void runInBackground(char *bgCommand){
 	char *param[MAX_PARAMS];
 	parseParameters(bgCommand, param);
-	execvp(param[0], param);
-	fprintf(stderr, "couldn't run background job: %s\n", bgCommand);
-	// we are quitting; so free memory
 	free(bgCommand);
+	execvp(param[0], param);
+	fprintf(stderr, "couldn't run background job: %s\n", param[0]);
+	free(last_command);
 	quit(127);
 }
 
@@ -59,10 +44,10 @@ static void runInForeground(char *command, char* param[]){
 	goto finally;
 	
 	finally:
-	fprintf(stderr, "couldn't run foreground job: %s\n", command);
-	// we are quitting; so free memory
-	free(command);
-	quit(127);
+		fprintf(stderr, "couldn't run foreground job: %s\n", command);
+		// we are quitting; so free memory
+		free(command);
+		quit(127);
 }
 
 /**
@@ -82,7 +67,12 @@ static void handleNormalCommand(char *command, char *param[], char *bgCommand){
 	}
 }
 
-static void handleBgCommand(){
+
+/**
+ * Handles bg command by sending a SIGCONT signal and changing the
+ * status to Running.
+ */
+static void handleBgCommand(void){
 	JobPtr job = findFirstStoppedJob(jobList);
 	if (job == NULL)
 		return;
@@ -90,6 +80,12 @@ static void handleBgCommand(){
 	job->status = Running;
 }
 
+/**
+ * Handles fg command for bringing the background job to foreground.
+ * It first looks for a job with the given id. If job id is 0, it
+ * looks for the last stopped job and brings it to back. If no stopped
+ * job is found, it brings the latest background job to front.
+ */
 static pid_t handleFgCommand(int id){
 	NodePtr node = findJobWithId(jobList, id);
 	if(node == NULL)
@@ -99,7 +95,7 @@ static pid_t handleFgCommand(int id){
 	kill(job->p_id, SIGCONT);
 	job->status = Running;
 	removeNode(jobList, node);
-	command = job->command;
+	last_command = job->command;
 	return job->p_id;
 }
 
@@ -107,22 +103,27 @@ static pid_t handleFgCommand(int id){
  * Main function for handling the provided line.
  * It parses the line first, identifies the type of commands, and executes accordingly
  */
+char *param[MAX_PARAMS];
 int handleCommand(const char *line) {
 	// copy line so that we can modify it such as trimming the whitespaces etc
-	command = malloc(strlen(line));
-	strcpy(command, line);
-	command = trimwhitespace(command);
+	last_command = malloc(strlen(line)+1);
+	strcpy(last_command, line);
+	last_command = trimwhitespace(last_command);
+	if(*last_command==0)
+	{
+		free(last_command);
+		return RETURN_SUCCESS;
+	}
 	int returnStatus = RETURN_FAIL;
 	// if no bg task, bgCommand is set to null
-	char *bgCommand = isBackgroundTask(command);
-	char *param[MAX_PARAMS];
-	if(isEmptyCommand(command)){
+	char *bgCommand = isBackgroundTask(last_command);
+	if(isEmptyCommand(last_command)){
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
 	}
 
 	// don't parse parameters before testing for empty command
-	parseParameters(command, param);
+	parseParameters(last_command, param);
 
 	if(isExitCommand(param[0])){
 		returnStatus = EXIT_SHELL;
@@ -174,7 +175,7 @@ int handleCommand(const char *line) {
 			goto finally;
 		}
 
-		fprintf(stdout, "%s\n", command);
+		fprintf(stdout, "%s\n", last_command);
 		last_child_pid = towait_pid;
 		int waitStatus;
 		waitStatus=waitpid(last_child_pid, &last_child_status, WSTOPPED);
@@ -196,13 +197,13 @@ int handleCommand(const char *line) {
 
 	else if(last_child_pid == 0) {
 		last_child_pid = getpid();
-		handleNormalCommand(command, param, bgCommand);
+		handleNormalCommand(last_command, param, bgCommand);
 		// we should never be at this point
 		returnStatus = RETURN_FAIL;
 		goto finally;
 	}else{
 		if(setpgid(last_child_pid,last_child_pid) == -1){
-			fprintf(stderr, "couldn't run foreground job: %s\n", command);
+			fprintf(stderr, "couldn't run foreground job: %s\n", last_command);
 			goto finally;
 		}
 	}
@@ -210,12 +211,7 @@ int handleCommand(const char *line) {
 	if(bgCommand == NULL) {
 		int waitStatus;
 		waitStatus=waitpid(last_child_pid, &last_child_status, WCONTINUED | WUNTRACED);
-
-		if(waitStatus == -1) {
-			//fprintf(stderr, "** WAITPID ERROR:  %d,  processStatus:%d, waitStatus:%d\n", last_child_pid, last_child_status, waitStatus);
-			returnStatus = RETURN_FAIL;
-			goto finally;
-		}
+		goto finally;
 		if(WIFCONTINUED(last_child_status) || WIFSTOPPED(last_child_status)) {
 			returnStatus = RETURN_SUCCESS;
 			goto finally;
@@ -229,7 +225,8 @@ int handleCommand(const char *line) {
 	finally:
 		if(getSize(jobList)>0)
 			jobList = reportCompletedJobs(jobList);
-		free(command);
+		free(param[0]);
+		free(last_command);
 		free(bgCommand);
 		return returnStatus;
 }
@@ -238,17 +235,12 @@ int handleCommand(const char *line) {
  * Runs the dash program with the provided prompt.
  */
 int run(char *prompt){
-	
-	setbuf(stdout, NULL);						// NEW sets stdout to unbuffered
-	int shell_pgid = tcgetpgrp(STDIN_FILENO);	// NEW captures terminal's current pgid
-	tcsetpgrp(STDIN_FILENO, getpgrp());			// NEW sets teminal's pgid to process's currents pgid
-
+	(void) signal(SIGCHLD, SIG_IGN);
+	(void) signal(SIGTTOU, SIG_IGN);
+	(void) signal(SIGTTIN, SIG_IGN);
+	(void) signal(SIGQUIT, SIG_IGN);
 	(void) signal(SIGINT, handle_sigterm);
 	(void) signal(SIGTSTP, handle_sigterm);
-	(void) signal(SIGQUIT, SIG_IGN);
-	(void) signal(SIGTTIN, SIG_IGN);
-	(void) signal(SIGTTOU, SIG_IGN);
-	(void) signal(SIGCHLD, SIG_IGN);
 
 	char *line;
 	jobList = createList(getKey, toString, freeJob);
@@ -265,24 +257,28 @@ int run(char *prompt){
 	// catch for Ctrl-D
 	if(line == '\0')
 		free(line);
-
-	tcsetpgrp(STDIN_FILENO, shell_pgid);		// NEW reset terminal back to original pgid
-	//handleCommand("clear");
-	quit(EXIT_SUCCESS);
+	while(hasNext(jobList)) {
+			NodePtr node = next(jobList);
+			JobPtr job = (JobPtr) node->obj;
+			removeNode(jobList, node);
+			freeNode(node, freeJob);
+		}
+		free(jobList);
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Handler for signals. It only handles Ctrl+Z and Ctrl+C signals.
+ */
 void handle_sigterm(int sig){
 	switch(sig){
 	case SIGTSTP:
 		kill(last_child_pid, SIGSTOP);
-		addJob(jobList, last_child_pid, command, Stopped);
+		addJob(jobList, last_child_pid, last_command, Stopped);
 		return;
 	case SIGINT:
 		kill(last_child_pid, SIGKILL);
 		fprintf(stdout, "\n");
 		return;
 	}
-	fprintf(stdout, "Caught this signal %o!\n", sig);
 }
-

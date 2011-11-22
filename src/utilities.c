@@ -5,14 +5,8 @@
  *  Created on: Sep 19, 2011
  *      Author: Ashok Gelal
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <ctype.h>
-#include <pwd.h>
+
 #include "utilities.h"
-#include "constants.h"
 
 /**
  * Trims whitespace off a string and returns it.
@@ -55,13 +49,14 @@ void parseParameters(const char *line, char *params[]) {
 		if(tok == NULL || i==MAX_PARAMS)
 			break;
 	}
+//	free(temp);
 }
 
 /**
  * Sets up the title of the the console so to show the current path.
  * Note: Olet tässä is just to make Linus happy
  */
-void setupConsoleTitle(){
+void setupConsoleTitle(void){
 	getcwd(cur_path, 4096);
 	printf("%c]0;%s%s%c",'\033', "Olet tässä: ",cur_path, '\007');
 }
@@ -69,7 +64,7 @@ void setupConsoleTitle(){
 /**
  * Returns the home path of the current user.
  */
-char *getHomePath(){
+char *getHomePath(void){
 	uid_t id = getuid();
 
 	struct passwd *pwd;
@@ -89,7 +84,11 @@ char* isBackgroundTask(const char *line) {
 	char *tok = strtok(temp, delim);
 
 	if(tok==NULL || strcmp(tok, line)==0)
+	{
+		free(temp);
 		return NULL;
+	}
+//	free(temp);
 	return trimwhitespace(tok);
 }
 
@@ -121,11 +120,16 @@ Boolean isChdirCommand(char *command){
 	return (strcmp(command, "cd")==0);
 }
 
-
+/**
+ * Returns TRUE if the given command is a background command 'bg'
+ */
 Boolean isBgCommand(char *command){
 	return (strcmp(command, "bg")==0);
 }
 
+/**
+ * Returns TRUE if the given command is a foreground command 'fg'
+ */
 Boolean isFgCommand(char *command){
 	return (strcmp(command, "fg")==0);
 }

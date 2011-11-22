@@ -48,7 +48,7 @@ Boolean hasNextReverse(ListPtr list)
 }
 
 /**
- * Returns the next node from a list
+ * Returns the previous node from a list
  */
 NodePtr nextReverse(ListPtr list)
 {

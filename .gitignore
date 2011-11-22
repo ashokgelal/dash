@@ -1,2 +1,7 @@
 src/*.o
 src/dash
+*.o
+*.a
+*.so
+README
+dash

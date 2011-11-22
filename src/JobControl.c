@@ -5,7 +5,6 @@
  *      Author: Ashok Gelal
  */
 
-#include <sys/wait.h>
 #include "JobControl.h"
 
 /**
@@ -37,10 +36,9 @@ static ListPtr reportStatus(ListPtr list, Boolean printRunning){
 				free(jobStr);
 			}
 			// copy to new list
-			addAtRear(newList, node);
 		}
+		addAtRear(newList, node);
 	}
-
 	return newList;
 }
 
@@ -50,6 +48,14 @@ static ListPtr reportStatus(ListPtr list, Boolean printRunning){
  */
 ListPtr reportAllJobs(ListPtr list){
 	ListPtr newList = reportStatus(list, TRUE);
+	while(hasNext(list)) {
+		NodePtr node = next(list);
+		JobPtr job = (JobPtr) node->obj;
+		if(job->status==Done){
+			removeNode(newList, node);
+			freeNode(node, freeJob);
+		}
+	}
 	free(list);
 	return newList;
 }
@@ -59,7 +65,15 @@ ListPtr reportAllJobs(ListPtr list){
  * been reported.
  */
 ListPtr reportCompletedJobs(ListPtr list) {
-	ListPtr newList = reportStatus(list, FALSE);
+	ListPtr newList = reportStatus(list, FALSE);init(list);
+	while(hasNext(list)) {
+		NodePtr node = next(list);
+		JobPtr job = (JobPtr) node->obj;
+		if(job->status==Done){
+			removeNode(newList, node);
+			freeNode(node, freeJob);
+		}
+	}
 	free(list);
 	return newList;
 }
@@ -84,7 +98,9 @@ void addJob(ListPtr list, pid_t pid, char *command, JobStatus status) {
 	free(jobStr);
 }
 
-
+/**
+ * Finds the first stopped job from the given list and returns a JobPtr.
+ */
 JobPtr findFirstStoppedJob(ListPtr list) {
 	initReverse(list);
 	NodePtr node;
@@ -98,8 +114,12 @@ JobPtr findFirstStoppedJob(ListPtr list) {
 	return NULL;
 }
 
+/**
+ * Tries to find the job with the given id from the given list.
+ * If the job id is 0, it tries to find the first stopped job and return it.
+ * If id is 0 and no job is found, eventually it returns the newest background job.
+ */
 NodePtr findJobWithId(ListPtr list, int id){
-	// TODO move this
 	initReverse(list);
 	NodePtr node;
 	while(hasNextReverse(list)){
