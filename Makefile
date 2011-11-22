@@ -1,9 +1,8 @@
 
 all: dash
 
-dash-all:
+dash-all: dash
 	cd generic-list; make; cp lib/*.* ../lib/ 
-	cd src; make
 dash:
 	cd src; make; cp ./dash ../
 	
