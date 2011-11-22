@@ -40,9 +40,13 @@ static Boolean isShowVersionCommand(int *argc, char *argv[])
 
 	return FALSE;
 }
+/**
+ * Sets up tcpgrp id so that we can restore letter to give handle back to
+ * the origin process.
+ */
 static void setupProcessGroup(void){
-	last_shell_pid = tcgetpgrp(STDIN_FILENO);	// NEW captures terminal's current pgid
-	tcsetpgrp(STDIN_FILENO, getpgrp());			// NEW sets teminal's pgid to process's currents pgid
+	last_shell_pid = tcgetpgrp(STDIN_FILENO);
+	tcsetpgrp(STDIN_FILENO, getpgrp());
 }
 
 /**
@@ -67,5 +71,4 @@ char * initDash(int argc, char *argv[]) {
  */
 void cleanup(void){
 	tcsetpgrp(STDIN_FILENO, last_shell_pid);
-//	handleCommand("clear");
 }
