@@ -18,6 +18,8 @@ Boolean isExitCommand(const char * );
 Boolean isEmptyCommand(const char *);
 Boolean isJobsCommand(const char *);
 Boolean isChdirCommand(char *);
+Boolean isBgCommand(char *);
+int isFgCommand(char *);
 
 
 #endif /* __UTILITIES_H_ */
