@@ -28,10 +28,10 @@ static void quit(int status){
 static void runInBackground(char *bgCommand){
 	char *param[MAX_PARAMS];
 	parseParameters(bgCommand, param);
-	execvp(param[0], param);
-	fprintf(stderr, "couldn't run background job: %s\n", bgCommand);
-	// we are quitting; so free memory
 	free(bgCommand);
+	execvp(param[0], param);
+	fprintf(stderr, "couldn't run background job: %s\n", param[0]);
+	free(last_command);
 	quit(127);
 }
 
@@ -44,10 +44,10 @@ static void runInForeground(char *command, char* param[]){
 	goto finally;
 	
 	finally:
-	fprintf(stderr, "couldn't run foreground job: %s\n", command);
-	// we are quitting; so free memory
-	free(command);
-	quit(127);
+		fprintf(stderr, "couldn't run foreground job: %s\n", command);
+		// we are quitting; so free memory
+		free(command);
+		quit(127);
 }
 
 /**
@@ -220,6 +220,7 @@ int handleCommand(const char *line) {
 	finally:
 		if(getSize(jobList)>0)
 			jobList = reportCompletedJobs(jobList);
+		free(param[0]);
 		free(last_command);
 		free(bgCommand);
 		return returnStatus;

@@ -49,6 +49,7 @@ void parseParameters(const char *line, char *params[]) {
 		if(tok == NULL || i==MAX_PARAMS)
 			break;
 	}
+//	free(temp);
 }
 
 /**
@@ -83,7 +84,11 @@ char* isBackgroundTask(const char *line) {
 	char *tok = strtok(temp, delim);
 
 	if(tok==NULL || strcmp(tok, line)==0)
+	{
+		free(temp);
 		return NULL;
+	}
+	free(temp);
 	return trimwhitespace(tok);
 }
 
