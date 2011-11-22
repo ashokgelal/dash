@@ -5,7 +5,6 @@
  *      Author: Ashok Gelal
  */
 
-#include <sys/wait.h>
 #include "JobControl.h"
 
 /**
@@ -84,7 +83,9 @@ void addJob(ListPtr list, pid_t pid, char *command, JobStatus status) {
 	free(jobStr);
 }
 
-
+/**
+ * Finds the first stopped job from the given list and returns a JobPtr.
+ */
 JobPtr findFirstStoppedJob(ListPtr list) {
 	initReverse(list);
 	NodePtr node;
@@ -98,8 +99,12 @@ JobPtr findFirstStoppedJob(ListPtr list) {
 	return NULL;
 }
 
+/**
+ * Tries to find the job with the given id from the given list.
+ * If the job id is 0, it tries to find the first stopped job and return it.
+ * If id is 0 and no job is found, eventually it returns the newest background job.
+ */
 NodePtr findJobWithId(ListPtr list, int id){
-	// TODO move this
 	initReverse(list);
 	NodePtr node;
 	while(hasNextReverse(list)){

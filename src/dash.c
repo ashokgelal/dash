@@ -15,5 +15,9 @@ int main(int argc, char *argv[]) {
 	char * prompt = initDash(argc, argv);
 
 	// loop-eval-execute = run
-	return run(prompt);
+	int status;
+	status = run(prompt);
+	cleanup();
+	exit(status);
+	return status;
 }

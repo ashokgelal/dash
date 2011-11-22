@@ -11,6 +11,7 @@
 #include <Node.h>
 #include <ListIterator.h>
 #include <ReverseListIterator.h>
+#include <sys/wait.h>
 #include "Job.h"
 
 ListPtr reportAllJobs(ListPtr);
