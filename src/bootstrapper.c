@@ -67,5 +67,5 @@ char * initDash(int argc, char *argv[]) {
  */
 void cleanup(void){
 	tcsetpgrp(STDIN_FILENO, last_shell_pid);
-	handleCommand("clear");
+//	handleCommand("clear");
 }

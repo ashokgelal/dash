@@ -36,10 +36,9 @@ static ListPtr reportStatus(ListPtr list, Boolean printRunning){
 				free(jobStr);
 			}
 			// copy to new list
-			addAtRear(newList, node);
 		}
+		addAtRear(newList, node);
 	}
-
 	return newList;
 }
 
@@ -49,6 +48,14 @@ static ListPtr reportStatus(ListPtr list, Boolean printRunning){
  */
 ListPtr reportAllJobs(ListPtr list){
 	ListPtr newList = reportStatus(list, TRUE);
+	while(hasNext(list)) {
+		NodePtr node = next(list);
+		JobPtr job = (JobPtr) node->obj;
+		if(job->status==Done){
+			removeNode(newList, node);
+			freeNode(node, freeJob);
+		}
+	}
 	free(list);
 	return newList;
 }
@@ -58,7 +65,15 @@ ListPtr reportAllJobs(ListPtr list){
  * been reported.
  */
 ListPtr reportCompletedJobs(ListPtr list) {
-	ListPtr newList = reportStatus(list, FALSE);
+	ListPtr newList = reportStatus(list, FALSE);init(list);
+	while(hasNext(list)) {
+		NodePtr node = next(list);
+		JobPtr job = (JobPtr) node->obj;
+		if(job->status==Done){
+			removeNode(newList, node);
+			freeNode(node, freeJob);
+		}
+	}
 	free(list);
 	return newList;
 }

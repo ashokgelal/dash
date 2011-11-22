@@ -88,7 +88,7 @@ char* isBackgroundTask(const char *line) {
 		free(temp);
 		return NULL;
 	}
-	free(temp);
+//	free(temp);
 	return trimwhitespace(tok);
 }
 

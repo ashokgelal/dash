@@ -103,15 +103,20 @@ static pid_t handleFgCommand(int id){
  * Main function for handling the provided line.
  * It parses the line first, identifies the type of commands, and executes accordingly
  */
+char *param[MAX_PARAMS];
 int handleCommand(const char *line) {
 	// copy line so that we can modify it such as trimming the whitespaces etc
-	last_command = malloc(strlen(line));
+	last_command = malloc(strlen(line)+1);
 	strcpy(last_command, line);
 	last_command = trimwhitespace(last_command);
+	if(*last_command==0)
+	{
+		free(last_command);
+		return RETURN_SUCCESS;
+	}
 	int returnStatus = RETURN_FAIL;
 	// if no bg task, bgCommand is set to null
 	char *bgCommand = isBackgroundTask(last_command);
-	char *param[MAX_PARAMS];
 	if(isEmptyCommand(last_command)){
 		returnStatus = RETURN_SUCCESS;
 		goto finally;
@@ -252,7 +257,13 @@ int run(char *prompt){
 	// catch for Ctrl-D
 	if(line == '\0')
 		free(line);
-	free(jobList);
+	while(hasNext(jobList)) {
+			NodePtr node = next(jobList);
+			JobPtr job = (JobPtr) node->obj;
+			removeNode(jobList, node);
+			freeNode(node, freeJob);
+		}
+		free(jobList);
 	return EXIT_SUCCESS;
 }
 
