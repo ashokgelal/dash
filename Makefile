@@ -1,14 +1,18 @@
 
-all: dash
+all: list dash
 
-dash-all: dash
-	cd generic-list; make; cp lib/*.* ../lib/ 
+list:
+	cd generic-list; make
+	cp generic-list/lib/*.* ./lib/ 
+	
 dash:
 	cd src; make; cp ./dash ../
 	
-clean-all:
-	rm -f lib/*.*; cd generic-list; make clean
-	cd src; make clean
 clean:
 	cd src; make clean
 	rm -f ./dash
+	rm -f lib/*.*; cd generic-list; make clean
+	
+#clean:
+	#cd src; make clean
+	#rm -f ./dash
