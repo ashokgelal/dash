@@ -3,7 +3,7 @@ INSTALL=..
 LIB=$(INSTALL)/lib
 INCLUDE=$(INSTALL)/include
 CC=gcc
-CFLAGS=-Wall -g -fPIC -shared -I$(INCLUDE)/
+CFLAGS=-Wall -O -g -fPIC -shared -I$(INCLUDE)/
 LFLAGS=-L$(LIB) -lmylib
 
 
