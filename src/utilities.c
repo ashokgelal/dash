@@ -36,10 +36,11 @@ char *trimwhitespace(char *str) {
  * The first element of the params is always the name of
  * the command itself
  */
-void parseParameters(const char *line, char *params[]) {
+Boolean parseParameters(const char *line, char *params[]) {
 	char *delim = " ";
 	char *temp = strdup(line);
-	int i = 0;
+	int i = 0, in, out;
+	Boolean has_dir = FALSE;
 	params[i++] = trimwhitespace(strtok(temp, delim));
 
 	while(1) {
@@ -47,9 +48,37 @@ void parseParameters(const char *line, char *params[]) {
 		params[i++] = tok;
 		// test for null and boundary
 		if(tok == NULL || i==MAX_PARAMS)
+		{
 			break;
+		}
+		if(strcmp(tok, "<")==0) {
+			tok = strtok(NULL, delim);
+			if(tok == NULL)
+				continue; // let command handle that
+			has_dir = TRUE;
+			in = open(tok, O_RDONLY);
+			dup2(in, STDIN_FILENO);
+			// don't add the token
+			i--;
+			close(in);
+		}
+		else if(strcmp(tok, ">")==0) {
+			tok = strtok(NULL, delim);
+			if(tok == NULL)
+				continue; // let command handle that
+			has_dir = TRUE;
+//			out = open(tok, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+			out = open(tok, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			dup2(out, STDOUT_FILENO);
+			// don't add the token
+			i--;
+			close(out);
+			fflush(stdout);
+		}
 	}
-//	free(temp);
+
+
+	return has_dir;
 }
 
 /**

@@ -13,11 +13,14 @@ pid_t last_child_pid;
 int last_child_status;
 ListPtr jobList;
 char *last_command;
+int in_save, out_save;
 
 /**
  * Frees up resources and quits the program with the provided status.
  */
 static void quit(int status){
+	dup2(in_save, STDIN_FILENO);
+	dup2(out_save, STDOUT_FILENO);
 	free(jobList);
 	exit(status);
 }
@@ -243,12 +246,16 @@ int run(char *prompt){
 
 	char *line;
 	jobList = createList(getKey, toString, freeJob);
+	in_save = dup(STDIN_FILENO);
+	out_save = dup(STDOUT_FILENO);
 	using_history();
 	while((line=readline(prompt))) {
 		if(handleCommand(line)==EXIT_SHELL) {
 			free(line);
 			break;
 		}
+		dup2(in_save, STDIN_FILENO);
+		dup2(out_save, STDOUT_FILENO);
 		add_history(line);
 		free(line);
 	}
@@ -264,6 +271,8 @@ int run(char *prompt){
 		freeNode(node, freeJob);
 	}
 	free(jobList);
+	dup2(in_save, STDIN_FILENO);
+	dup2(out_save, STDOUT_FILENO);
 	return EXIT_SUCCESS;
 }
 

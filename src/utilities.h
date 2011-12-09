@@ -14,11 +14,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <pwd.h>
+#include <fcntl.h>
 #include "constants.h"
 
 char cur_path[4096];
 char *trimwhitespace(char *);
-void parseParameters(const char *, char *[]);
+Boolean parseParameters(const char *, char *[]);
 void setupConsoleTitle(void);
 char *getHomePath(void);
 char* isBackgroundTask(const char *line);
