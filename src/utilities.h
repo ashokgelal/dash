@@ -19,7 +19,7 @@
 
 char cur_path[4096];
 char *trimwhitespace(char *);
-Boolean parseParameters(const char *, char *[]);
+void parseParameters(const char *, char *[]);
 void setupConsoleTitle(void);
 char *getHomePath(void);
 char* isBackgroundTask(const char *line);

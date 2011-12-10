@@ -27,6 +27,8 @@ static void print_memerror();
 static void rearrange(MemBlockPtr, uint);
 static void remove_buddy(MemBlockPtr, uint);
 
+// initializes buddy memory
+// n is the size of memory
 void buddy_init(size_t n){
 	initial_best_fit_size = find_best_fit_two(validate_size(n));
 	initialized = TRUE;
@@ -40,10 +42,12 @@ void buddy_init(size_t n){
 	mem_blocks[initial_best_fit_size]->header.size_pow = initial_best_fit_size;
 }
 
+// overrides calloc to support library-interposing
 void * calloc(size_t blocks, size_t size){
 	return calloc(blocks, size);
 }
 
+// allocates blocks of memory each of given size
 void * buddy_calloc(size_t blocks, size_t size){
 	size_t best_fit_pow;
 	uint i;
@@ -60,10 +64,13 @@ void * buddy_calloc(size_t blocks, size_t size){
 	return ret;
 }
 
+// faciliates malloc to support library-interposing
 void * malloc(size_t size){
 	return buddy_malloc(size);
 }
 
+// mallocs memory of given size. If memory is not being
+// initialized, it transparently initializes it.
 void * buddy_malloc(size_t size){
 	uint best_fit_pow, current_pow;
 
@@ -94,6 +101,7 @@ void * buddy_malloc(size_t size){
 	return NULL;
 }
 
+/// prints the buddy lists
 void printBuddyLists(){
 	uint i;
 	for(i = 0; i<= initial_best_fit_size; i++){
@@ -117,12 +125,14 @@ void printBuddyLists(){
 	printf("\n");
 }
 
+// A helper method for printing out of memory error
 static void print_memerror() {
 	fprintf(stderr, "Out of Memory!");
 	errno = ENOMEM;
 	exit(EXIT_FAILURE);
 }
 
+// validates the given size
 static size_t validate_size(size_t n){
 	if(n > MAX_LIMIT) {
 		print_memerror();
@@ -130,6 +140,7 @@ static size_t validate_size(size_t n){
 	return (n == 0 ? DEFAULT_MEM_SIZE : n);
 }
 
+// returns the nearest best fit power of two
 static size_t find_best_fit_two(size_t num){
 	if(num < 2)
 		return 0;
@@ -144,6 +155,7 @@ static size_t find_best_fit_two(size_t num){
 	return nearest;
 }
 
+// a helper method for creating a memory blocks.
 static void * create_mem_block(uint curr_pow, uint best_fit_pow){
 	if(curr_pow == best_fit_pow){
 		MemBlockPtr block = mem_blocks[curr_pow];
@@ -165,6 +177,7 @@ static void * create_mem_block(uint curr_pow, uint best_fit_pow){
 		return divide_mem_block(curr_pow, best_fit_pow);
 }
 
+// a helper method for dividing a big chunk of memory to small chunks
 static void *divide_mem_block(uint curr_pow, uint best_fit_pow){
 	if(curr_pow == best_fit_pow)
 		return create_mem_block(curr_pow, best_fit_pow);
@@ -195,6 +208,7 @@ static void *divide_mem_block(uint curr_pow, uint best_fit_pow){
 	return divide_mem_block(curr_pow, best_fit_pow);
 }
 
+// returns the buddy memory block pointer for given block pointer
 static MemBlockPtr get_buddy(MemBlockPtr ptr, uint best_fit_pow){
 	MemBlockPtr next = mem_blocks[best_fit_pow];
 	while(next != NULL){
@@ -205,16 +219,19 @@ static MemBlockPtr get_buddy(MemBlockPtr ptr, uint best_fit_pow){
 	return NULL;
 }
 
+// check if two memory block pointers are buddies
 static Boolean are_buddies(MemBlockPtr client, MemBlockPtr anon, uint best_fit_pow){
 	size_t client_add;
 	client_add = (size_t)client - raw_mem_size;
 	return (MemBlockPtr)(raw_mem_size + ((client_add ^ 1) << client->header.size_pow)) == anon;
 }
 
+// facilitates free call for library interposing
 void free(void *obj){
 	buddy_free(obj);
 }
 
+// frees memory for given pointer
 void buddy_free(void *obj){
 	MemBlockPtr ptr = (MemBlockPtr) ((char *)obj - sizeof(BlockHeader));
 	ptr->header.is_used = FALSE;
@@ -224,6 +241,7 @@ void buddy_free(void *obj){
 	mem_blocks[curr_pow] == NULL ? (mem_blocks[curr_pow] = ptr) : merge_with_buddy(ptr, curr_pow);
 }
 
+// removes buddy from a tree
 static void remove_buddy(MemBlockPtr buddy, uint best_fit_pow){
 	MemBlockPtr prev_block, next_block;
 	prev_block = buddy->prev;
@@ -247,6 +265,7 @@ static void remove_buddy(MemBlockPtr buddy, uint best_fit_pow){
 	}
 }
 
+// merges two buddies
 static void merge(MemBlockPtr client, MemBlockPtr buddy){
 	MemBlockPtr main_block, sec_block;
 	uint curr_pow;
@@ -268,11 +287,14 @@ static void merge(MemBlockPtr client, MemBlockPtr buddy){
 	merge_with_buddy(main_block, main_block->header.size_pow);
 }
 
+// finds and either rearranges two memory blocks or merges them if they are buddies
+// and both are free
 static void	merge_with_buddy(MemBlockPtr ptr, uint best_fit_pow){
 	MemBlockPtr buddy = get_buddy(ptr, best_fit_pow);
 	buddy == NULL ? rearrange(ptr, best_fit_pow) : merge(ptr, buddy);
 }
 
+// rearranges two memory blocks
 static void rearrange(MemBlockPtr client, uint i){
 	MemBlockPtr parent_block, curr_block;
 	curr_block = mem_blocks[i];
